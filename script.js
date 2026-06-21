@@ -19,6 +19,9 @@ const adminModal = document.getElementById('adminModal');
 const adminModalClose = document.getElementById('adminModalClose');
 const adminModalList = document.getElementById('adminModalList');
 const courseBookButtons = document.querySelectorAll('.course-book-button');
+const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+const mobileNav = document.getElementById('mobileNav');
+const mobileNavClose = document.getElementById('mobileNavClose');
 let selectedDate = null;
 let selectedTime = null;
 let selectedCourse = '';
@@ -70,6 +73,29 @@ courseBookButtons.forEach((button) => {
     const course = button.dataset.course;
     setCourseSelection(course);
     document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
+
+    // open booking section and auto-select the first date/time so student details show immediately
+    const firstDateButton = document.querySelector('.date-item');
+    if (firstDateButton) {
+      firstDateButton.click();
+    }
+  });
+});
+
+mobileMenuToggle.addEventListener('click', () => {
+  mobileNav.classList.remove('hidden');
+  mobileNav.setAttribute('aria-hidden', 'false');
+});
+
+mobileNavClose.addEventListener('click', () => {
+  mobileNav.classList.add('hidden');
+  mobileNav.setAttribute('aria-hidden', 'true');
+});
+
+mobileNav.querySelectorAll('a').forEach((link) => {
+  link.addEventListener('click', () => {
+    mobileNav.classList.add('hidden');
+    mobileNav.setAttribute('aria-hidden', 'true');
   });
 });
 
@@ -121,6 +147,8 @@ function selectTime(element, time) {
   selectedTime = time;
   document.querySelectorAll('.time-slot').forEach((node) => node.classList.remove('active'));
   element.classList.add('active');
+  // focus student name field after selecting time on mobile/book flow
+  document.getElementById('studentName').focus();
 }
 
 bookingForm.addEventListener('submit', (event) => {
