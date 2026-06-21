@@ -27,7 +27,14 @@ let selectedTime = null;
 let selectedCourse = '';
 let adminMode = false;
 const bookings = [];
-const API_BASE = window.ZENTRIX_API_BASE || '';
+const SUPABASE_URL = window.ZENTRIX_SUPABASE_URL || 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_KEY = window.ZENTRIX_SUPABASE_ANON_KEY || 'YOUR_ANON_KEY';
+const SUPABASE_HEADERS = {
+  apikey: SUPABASE_KEY,
+  Authorization: `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json',
+  Prefer: 'return=representation',
+};
 
 const coursePrices = {
   'HTML Fundamentals': 1000,
@@ -73,12 +80,6 @@ courseBookButtons.forEach((button) => {
     const course = button.dataset.course;
     setCourseSelection(course);
     document.getElementById('booking').scrollIntoView({ behavior: 'smooth' });
-
-    // open booking section and auto-select the first date/time so student details show immediately
-    const firstDateButton = document.querySelector('.date-item');
-    if (firstDateButton) {
-      firstDateButton.click();
-    }
   });
 });
 
@@ -111,9 +112,6 @@ function createDateItems() {
       <span class="day">${date.getDate()}</span>`;
     item.addEventListener('click', () => selectDate(item, date));
     dateSlider.appendChild(item);
-    if (i === 0) {
-      selectDate(item, date);
-    }
   }
 }
 
@@ -122,6 +120,7 @@ function selectDate(element, date) {
   document.querySelectorAll('.date-item').forEach((node) => node.classList.remove('active'));
   element.classList.add('active');
   renderTimeSlots();
+  timeGrid.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function renderTimeSlots() {
@@ -135,20 +134,14 @@ function renderTimeSlots() {
     item.addEventListener('click', () => selectTime(item, slot));
     timeGrid.appendChild(item);
   });
-  if (slots.length > 0) {
-    const firstSlot = timeGrid.querySelector('.time-slot');
-    if (firstSlot) {
-      selectTime(firstSlot, slots[0]);
-    }
-  }
 }
 
 function selectTime(element, time) {
   selectedTime = time;
   document.querySelectorAll('.time-slot').forEach((node) => node.classList.remove('active'));
   element.classList.add('active');
-  // focus student name field after selecting time on mobile/book flow
   document.getElementById('studentName').focus();
+  document.getElementById('bookingForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 bookingForm.addEventListener('submit', (event) => {
@@ -181,32 +174,36 @@ bookingForm.addEventListener('submit', (event) => {
 
   const reader = new FileReader();
   reader.onload = (event) => {
-    const bookingObj = { name, course, dateText, selectedTime, phone, email, bookingText, screenshot: event.target.result };
+    const bookingObj = {
+      name,
+      course,
+      dateText,
+      selectedTime,
+      phone,
+      email,
+      bookingText,
+      screenshot: event.target.result,
+      createdAt: new Date().toISOString(),
+    };
 
-    // try to POST to server first; fall back to localStorage if offline
-    fetch(`${API_BASE}/api/bookings`, {
+    fetch(`${SUPABASE_URL}/rest/v1/bookings`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: SUPABASE_HEADERS,
       body: JSON.stringify(bookingObj),
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && data.ok) {
-          // sync returned object (with id)
-          bookings.unshift(data.booking || bookingObj);
-        } else {
-          bookings.unshift(bookingObj);
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) {
+          throw new Error(data?.message || 'Booking failed');
         }
-        saveBookings();
+        const saved = Array.isArray(data) ? data[0] : data;
+        bookings.unshift(saved);
         refreshAdminList();
         openModal(confirmationModal);
       })
-      .catch(() => {
-        // offline/off error: store locally
-        bookings.unshift(bookingObj);
-        saveBookings();
-        refreshAdminList();
-        openModal(confirmationModal);
+      .catch((error) => {
+        console.error('Supabase booking error', error);
+        alert('Booking could not be saved to Supabase. Please check your backend settings and try again.');
       });
   };
   reader.readAsDataURL(screenshotFile);
@@ -247,40 +244,19 @@ function refreshAdminList() {
 
 // Fetch bookings from server (admin) when passphrase is provided
 function fetchAdminBookings(passphrase) {
-  return fetch(`${API_BASE}/api/bookings?pass=${encodeURIComponent(passphrase)}`)
+  return fetch(`${SUPABASE_URL}/rest/v1/bookings?select=*&order=id.desc`, {
+    headers: SUPABASE_HEADERS,
+  })
     .then((r) => {
       if (!r.ok) throw new Error('unauthorized');
       return r.json();
     })
-    .then((data) => data.bookings || [])
     .catch((err) => {
       console.warn('fetchAdminBookings failed', err);
       return null;
     });
 }
 
-function saveBookings() {
-  try {
-    localStorage.setItem('zentrix_bookings', JSON.stringify(bookings));
-  } catch (e) {
-    console.error('saveBookings failed', e);
-  }
-}
-
-function loadBookings() {
-  try {
-    const raw = localStorage.getItem('zentrix_bookings');
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length) {
-      // clear current and push loaded
-      bookings.splice(0, bookings.length, ...parsed);
-      refreshAdminList();
-    }
-  } catch (e) {
-    console.error('loadBookings failed', e);
-  }
-}
 
 function openModal(modal) {
   modalBackdrop.classList.remove('hidden');
@@ -324,5 +300,3 @@ adminIconBtn.addEventListener('click', () => {
 
 createDateItems();
 renderTimeSlots();
-// load persisted bookings (if any)
-loadBookings();

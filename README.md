@@ -2,21 +2,31 @@ Zentrix Academy (frontend + optional backend)
 
 Frontend: simple static site (index.html, styles.css, script.js).
 
-Optional backend (recommended for syncing bookings across devices):
+Backend: Supabase only.
 
-1. Install Node.js (v16+ recommended)
-2. From project root run:
+1. Create a Supabase project.
+2. Create a `bookings` table with columns:
+   - `id` (bigint, primary key, auto-increment)
+   - `name` (text)
+   - `course` (text)
+   - `dateText` (text)
+   - `selectedTime` (text)
+   - `phone` (text)
+   - `email` (text)
+   - `bookingText` (text)
+   - `screenshot` (text)
+   - `createdAt` (timestamp)
 
-```powershell
-npm install
-npm start
+3. Add your Supabase project settings in `index.html` or globally:
+
+```html
+<script>
+  window.ZENTRIX_SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+  window.ZENTRIX_SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+</script>
 ```
 
-This starts a minimal Express server on port 4000 that exposes:
-- POST /api/bookings — add a booking (JSON body)
-- GET  /api/bookings?pass=zentrix — list bookings (admin passphrase)
-
-Frontend changes: `script.js` attempts to POST bookings to `/api/bookings` by default. If your frontend is served from a different origin, set `window.ZENTRIX_API_BASE` or configure a proxy/redirect.
+The frontend now sends bookings directly to Supabase using the REST endpoint.
 
 Netlify deployment (frontend only):
 
