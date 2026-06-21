@@ -27,8 +27,8 @@ let selectedTime = null;
 let selectedCourse = '';
 let adminMode = false;
 const bookings = [];
-const SUPABASE_URL = window.ZENTRIX_SUPABASE_URL || 'https://YOUR_PROJECT_ID.supabase.co';
-const SUPABASE_KEY = window.ZENTRIX_SUPABASE_ANON_KEY || 'YOUR_ANON_KEY';
+const SUPABASE_URL = window.ZENTRIX_SUPABASE_URL || 'https://rezdcoubniwsfkqcdgmx.supabase.co';
+const SUPABASE_KEY = window.ZENTRIX_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlemRjb3Vibml3cWNkZ214Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMDY2NzAsImV4cCI6MjA5NzU4MjY3MH0.9mYpJKiWRhU4ZHyK6NebCbo3tOzy6VWZqVf-UyLO53I';
 const SUPABASE_HEADERS = {
   apikey: SUPABASE_KEY,
   Authorization: `Bearer ${SUPABASE_KEY}`,
