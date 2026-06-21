@@ -296,11 +296,16 @@
 
     <!-- 
       SUPABASE CONFIGURATION
-      Your Supabase URL and anon key must be defined before loading script.js.
+      Update these values with your actual Supabase project URL and anon key.
+      1. Open your Supabase project.
+      2. Go to Settings → API.
+      3. Copy the Project URL and anon public key.
+      4. Replace the placeholders below.
+      If you see "Invalid API key", regenerate the anon key and replace it here.
     -->
     <script>
-      window.ZENTRIX_SUPABASE_URL = 'https://rezdcoubniwsfkqcdgmx.supabase.co';
-      window.ZENTRIX_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlemRjb3Vibml3cWNkZ214Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMDY2NzAsImV4cCI6MjA5NzU4MjY3MH0.9mYpJKiWRhU4ZHyK6NebCbo3tOzy6VWZqVf-UyLO53I';
+      window.ZENTRIX_SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+      window.ZENTRIX_SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
     </script>
 
     <script src="script.js"></script>

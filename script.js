@@ -188,7 +188,7 @@ bookingForm.addEventListener('submit', (event) => {
 
     // Check if Supabase is properly configured
     if (!SUPABASE_URL || !SUPABASE_KEY) {
-      alert('Supabase credentials are missing. Make sure the URL and anon key are defined in index.html before script.js.');
+      alert('Supabase credentials are missing. Make sure the URL and anon key are defined in index.html before loading script.js.');
       console.error('Supabase credentials missing:', { SUPABASE_URL, SUPABASE_KEY });
       return;
     }
@@ -207,7 +207,11 @@ bookingForm.addEventListener('submit', (event) => {
             response: data,
             url: `${SUPABASE_URL}/rest/v1/bookings`,
           });
-          throw new Error(data?.message || data?.error_description || 'Booking failed');
+          const message = data?.message || data?.error_description || 'Booking failed';
+          if (r.status === 401 || message.toLowerCase().includes('invalid api key')) {
+            throw new Error('Invalid Supabase anon key. Regenerate the anon key in Supabase and update index.html.');
+          }
+          throw new Error(message);
         }
         const saved = Array.isArray(data) ? data[0] : data;
         bookings.unshift(saved);
