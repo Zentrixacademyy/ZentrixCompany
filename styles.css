@@ -555,10 +555,12 @@ a {
   left: 50%;
   transform: translate(-50%, -50%);
   width: min(520px, calc(100% - 2rem));
+  max-height: 80vh;
   border-radius: 28px;
   padding: 2rem;
   z-index: 51;
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+  overflow-y: auto;
 }
 
 .modal-close {
@@ -590,6 +592,8 @@ a {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .screenshot-preview img,
@@ -670,6 +674,27 @@ a {
   display: grid;
   gap: 1rem;
   margin-top: 1rem;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.booking-log-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.booking-log-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+}
+
+.booking-log-list::-webkit-scrollbar-thumb {
+  background: rgba(47, 140, 255, 0.4);
+  border-radius: 4px;
+}
+
+.booking-log-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(47, 140, 255, 0.6);
 }
 
 .booking-log-entry {

@@ -346,7 +346,7 @@ function refreshAdminList() {
     return;
   }
   notice.textContent = `${bookings.length} booking(s) found.`;
-  bookings.forEach((booking) => {
+  bookings.forEach((booking, index) => {
     const entry = document.createElement('div');
     entry.className = 'booking-log-entry';
     const bName = booking.name || booking.full_name || '';
@@ -366,11 +366,20 @@ function refreshAdminList() {
       <p><strong>Phone:</strong> ${bPhone}</p>
       <p><strong>Email:</strong> ${bEmail}</p>
       <pre>${bText}</pre>
-      <div class="booking-screenshot-preview">
+      <button class="btn btn-secondary view-screenshot-btn" data-booking-index="${index}" style="margin-top: 1rem; width: auto; padding: 0.75rem 1.5rem;">View Screenshot</button>
+      <div class="booking-screenshot-preview hidden" id="screenshot-${index}">
         <img src="${bScreenshot}" alt="Booking screenshot for ${bName}" />
       </div>
     `;
     adminModalList.appendChild(entry);
+    
+    // Add event listener to view button
+    const viewBtn = entry.querySelector('.view-screenshot-btn');
+    const screenshotDiv = entry.querySelector(`#screenshot-${index}`);
+    viewBtn.addEventListener('click', () => {
+      screenshotDiv.classList.toggle('hidden');
+      viewBtn.textContent = screenshotDiv.classList.contains('hidden') ? 'View Screenshot' : 'Hide Screenshot';
+    });
   });
 }
 
