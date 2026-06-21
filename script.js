@@ -517,7 +517,9 @@ function closeModal(modal) {
 confirmationModalClose.addEventListener('click', () => closeModal(confirmationModal));
 modalDoneBtn.addEventListener('click', () => closeModal(confirmationModal));
 adminModalClose.addEventListener('click', () => closeModal(adminModal));
-manageBooksBtn.addEventListener('click', () => {
+manageBooksBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
   if (!adminMode) {
     const password = prompt('Enter admin passphrase to view submitted bookings:');
     if (password && password.toLowerCase() === 'zentrix') {
