@@ -3,6 +3,7 @@ const timeGrid = document.getElementById('timeGrid');
 const bookingForm = document.getElementById('bookingForm');
 const courseSelect = document.getElementById('courseSelect');
 const selectedCourseLabel = document.getElementById('selectedCourseLabel');
+const selectedSlotLabel = document.getElementById('selectedSlotLabel');
 const bookingScreenshot = document.getElementById('bookingScreenshot');
 const screenshotPreview = document.getElementById('screenshotPreview');
 const screenshotPreviewImg = document.getElementById('screenshotPreviewImg');
@@ -73,6 +74,47 @@ const coursePrices = {
   'IoT and Robotics': 1000,
 };
 
+const bookingColumnFallbacks = {
+  course: ['course_name', 'class', 'booking_course'],
+  dateText: ['date_text', 'booking_date', 'date'],
+  date: ['dateText', 'date_text', 'booking_date'],
+  date_text: ['booking_date', 'date'],
+  booking_date: ['date', 'dateText'],
+  selectedTime: ['selected_time', 'time', 'booking_time'],
+  selected_time: ['selectedTime', 'time', 'booking_time'],
+  phone: ['phone_number', 'mobile', 'contact'],
+  email: ['email_address', 'user_email'],
+  screenshot: ['screenshot_data', 'image', 'booking_screenshot'],
+};
+
+function parseMissingSupabaseColumn(errorMessage) {
+  const match = /Could not find the ['"]?([^'"\s]+)['"]? column/i.exec(errorMessage);
+  return match ? match[1] : null;
+}
+
+function buildFallbackBookingObject(bookingObj, missingColumn) {
+  const fallbackKeys = bookingColumnFallbacks[missingColumn];
+  if (!fallbackKeys || fallbackKeys.length === 0) return null;
+
+  const nextKey = fallbackKeys[0];
+  const nextFallbacks = fallbackKeys.slice(1);
+  const newBookingObj = { ...bookingObj };
+
+  if (missingColumn in newBookingObj) {
+    newBookingObj[nextKey] = newBookingObj[missingColumn];
+    delete newBookingObj[missingColumn];
+  } else {
+    return null;
+  }
+
+  // Update the fallback list so if the nextKey also fails we can keep trying alternates.
+  if (nextFallbacks.length > 0) {
+    bookingColumnFallbacks[nextKey] = nextFallbacks;
+  }
+
+  return newBookingObj;
+}
+
 function formatDate(date) {
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
@@ -81,10 +123,52 @@ function formatDate(date) {
   });
 }
 
+function compressImage(dataUrl, maxWidth = 800, maxHeight = 600, quality = 0.6) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+      } else if (height > maxHeight) {
+        width = Math.round((width * maxHeight) / height);
+        height = maxHeight;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressedDataUrl);
+    };
+    img.src = dataUrl;
+  });
+}
+
 function setCourseSelection(course) {
   selectedCourse = course;
   courseSelect.value = course;
-  selectedCourseLabel.textContent = course;
+  selectedCourseLabel.textContent = course || 'None';
+}
+
+function updateSelectedSlotLabel() {
+  if (selectedDate && selectedTime) {
+    const dateText = selectedDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+    selectedSlotLabel.textContent = `${dateText} at ${selectedTime}`;
+  } else {
+    selectedSlotLabel.textContent = 'None';
+  }
 }
 
 courseSelect.addEventListener('change', (event) => {
@@ -145,15 +229,19 @@ function createDateItems() {
   }
 }
 
-function selectDate(element, date) {
+function selectDate(element, date, scroll = true) {
   selectedDate = date;
+  selectedTime = null;
   document.querySelectorAll('.date-item').forEach((node) => node.classList.remove('active'));
   element.classList.add('active');
-  renderTimeSlots();
-  timeGrid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  renderTimeSlots(false);
+  updateSelectedSlotLabel();
+  if (scroll) {
+    timeGrid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
-function renderTimeSlots() {
+function renderTimeSlots(selectDefault = true) {
   const slots = ['10:00 AM', '12:00 PM', '2:00 PM', '4:00 PM', '6:00 PM'];
   timeGrid.innerHTML = '';
   slots.forEach((slot) => {
@@ -164,14 +252,21 @@ function renderTimeSlots() {
     item.addEventListener('click', () => selectTime(item, slot));
     timeGrid.appendChild(item);
   });
+
+  if (selectDefault && timeGrid.firstElementChild) {
+    selectTime(timeGrid.firstElementChild, slots[0], false);
+  }
 }
 
-function selectTime(element, time) {
+function selectTime(element, time, scroll = true) {
   selectedTime = time;
   document.querySelectorAll('.time-slot').forEach((node) => node.classList.remove('active'));
   element.classList.add('active');
+  updateSelectedSlotLabel();
   document.getElementById('studentName').focus();
-  document.getElementById('bookingForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (scroll) {
+    bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 bookingForm.addEventListener('submit', async (event) => {
@@ -203,51 +298,42 @@ bookingForm.addEventListener('submit', async (event) => {
   confirmationModalDetails.textContent = bookingText;
 
   const reader = new FileReader();
-  reader.onload = (event) => {
+  reader.onload = async (event) => {
+    // Compress the image before sending to reduce payload size
+    const compressedScreenshot = await compressImage(event.target.result);
+
+    // Also include an ISO `date` field (YYYY-MM-DD) because some Supabase
+    // schemas use a DATE column named `date` which rejects human-readable
+    // strings like "Sunday, June 28". Include both formats to be tolerant.
+    const isoDate = selectedDate ? selectedDate.toISOString().slice(0, 10) : null;
+
     const bookingObj = {
       name,
       email,
       phone,
-      booking_date: dateText,
-      booking_time: selectedTime,
-      screenshot_data: event.target.result,
+      course,
+      dateText,
+      date: isoDate,
+      selectedTime,
+      screenshot: compressedScreenshot,
     };
 
-    // Check if Supabase is properly configured
-    if (!SUPABASE_CONFIGURED) {
-      alert('Supabase is not configured. Replace the placeholder URL and anon key in index.html with your actual Supabase credentials.');
-      console.error('Supabase credentials invalid or missing:', { SUPABASE_URL, SUPABASE_KEY });
-      return;
+    try {
+      const savedBooking = await submitBooking(bookingObj);
+      bookings.unshift(savedBooking);
+      refreshAdminList();
+      openModal(confirmationModal);
+    } catch (err) {
+      console.error('Booking error:', err);
+      alert(`Booking failed: ${err.message || 'Please try again.'}`);
     }
-
-    const useSupabaseClient = Boolean(supabaseClient);
-    if (!useSupabaseClient) {
-      throw new Error('Supabase client unavailable. Check that the Supabase JS client is loaded and the URL/key are configured correctly.');
-    }
-
-    const { data, error } = await supabaseClient
-      .from('bookings')
-      .insert([bookingObj])
-      .select();
-
-    if (error) {
-      console.error('Supabase API Error:', error);
-      if (error.status === 401 || error.message.toLowerCase().includes('invalid api key') || error.message.toLowerCase().includes('unauthorized')) {
-        throw new Error('Invalid Supabase key or insufficient permissions. Ensure the key is valid for the current project and that the bookings table allows inserts.');
-      }
-      throw new Error(error.message || 'Booking failed');
-    }
-
-    const saved = Array.isArray(data) ? data[0] : data;
-    bookings.unshift(saved);
-    refreshAdminList();
-    openModal(confirmationModal);
   };
   reader.readAsDataURL(screenshotFile);
 
   bookingForm.reset();
   selectedCourse = '';
   selectedCourseLabel.textContent = 'None';
+  selectedSlotLabel.textContent = 'None';
   screenshotPreview.hidden = true;
 });
 
@@ -262,36 +348,158 @@ function refreshAdminList() {
   bookings.forEach((booking) => {
     const entry = document.createElement('div');
     entry.className = 'booking-log-entry';
+    const bName = booking.name || booking.full_name || '';
+    const bDate = booking.dateText || booking.date_text || booking.date || '';
+    const bTime = booking.selectedTime || booking.selected_time || booking.time || '';
+    const bCourse = booking.course || '';
+    const bPhone = booking.phone || '';
+    const bEmail = booking.email || '';
+    const bText = booking.bookingText || booking.booking_text || booking.bookingtext || booking.booking || '';
+    const bScreenshot = booking.screenshot || booking.screenshot_data || '';
     entry.innerHTML = `
       <div class="booking-log-header">
-        <strong>${booking.name}</strong>
-        <span>${booking.dateText} • ${booking.selectedTime}</span>
+        <strong>${bName}</strong>
+        <span>${bDate} • ${bTime}</span>
       </div>
-      <p><strong>Course:</strong> ${booking.course}</p>
-      <p><strong>Phone:</strong> ${booking.phone}</p>
-      <p><strong>Email:</strong> ${booking.email}</p>
-      <pre>${booking.bookingText}</pre>
+      <p><strong>Course:</strong> ${bCourse}</p>
+      <p><strong>Phone:</strong> ${bPhone}</p>
+      <p><strong>Email:</strong> ${bEmail}</p>
+      <pre>${bText}</pre>
       <div class="booking-screenshot-preview">
-        <img src="${booking.screenshot}" alt="Booking screenshot for ${booking.name}" />
+        <img src="${bScreenshot}" alt="Booking screenshot for ${bName}" />
       </div>
     `;
     adminModalList.appendChild(entry);
   });
 }
 
-// Fetch bookings from server (admin) when passphrase is provided
-function fetchAdminBookings(passphrase) {
-  return fetch(`${SUPABASE_URL}/rest/v1/bookings?select=*&order=id.desc`, {
-    headers: SUPABASE_HEADERS,
-  })
-    .then((r) => {
-      if (!r.ok) throw new Error('unauthorized');
-      return r.json();
-    })
-    .catch((err) => {
-      console.warn('fetchAdminBookings failed', err);
-      return null;
+async function submitBooking(bookingObj) {
+  // Prefer Supabase when configured; otherwise use a local API proxy if available.
+  const useSupabase = SUPABASE_CONFIGURED && supabaseClient;
+
+  if (!useSupabase && (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    throw new Error('No internet connection. Please reconnect and try again.');
+  }
+
+  if (!useSupabase && (!window.ZENTRIX_API_BASE || window.ZENTRIX_API_BASE === '')) {
+    throw new Error('No backend configured. Add Supabase credentials in index.html or run the local API and set ZENTRIX_API_BASE.');
+  }
+
+  // If Supabase is available, attempt to insert there but fall back to the local API on network errors.
+  if (useSupabase) {
+    let currentBookingObj = { ...bookingObj };
+    const triedColumns = new Set();
+
+    while (true) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('bookings')
+          .insert([currentBookingObj])
+          .select();
+
+        if (!error) {
+          return Array.isArray(data) ? data[0] : data;
+        }
+
+        const errorMessage = String(error.message || '').toLowerCase();
+        if (errorMessage.includes('failed to fetch') || errorMessage.includes('internet_disconnected') || errorMessage.includes('networkerror')) {
+          // network issue — fall back to local API below
+          console.warn('Supabase network issue detected, will try local API fallback:', error.message || error);
+          break;
+        }
+
+        if (error.code === '42501' || errorMessage.includes('permission denied')) {
+          throw new Error('Permission denied for table bookings. Make sure the Supabase anon role has INSERT privileges and an RLS policy exists for public inserts.');
+        }
+
+        const missingColumn = parseMissingSupabaseColumn(error.message || '');
+        if (!missingColumn || triedColumns.has(missingColumn)) {
+          console.error('Supabase API Error:', error);
+          throw new Error(error.message || 'Booking failed via Supabase. Check table permissions and API key.');
+        }
+
+        triedColumns.add(missingColumn);
+        const fallback = buildFallbackBookingObject(currentBookingObj, missingColumn);
+        if (!fallback) {
+          console.error('Supabase API Error:', error);
+          throw new Error(error.message || 'Booking failed via Supabase. Check table permissions and API key.');
+        }
+
+        currentBookingObj = fallback;
+      } catch (err) {
+        // If the error looks like a network/fetch failure, fall through to local API.
+        if (err instanceof TypeError || /failed to fetch/i.test(err.message || '')) {
+          console.warn('Supabase network error, falling back to local API:', err.message);
+          break;
+        }
+        throw err;
+      }
+    }
+  }
+
+  // Local API fallback (POST /api/bookings) — server.js provides this endpoint.
+  try {
+    const apiBase = window.ZENTRIX_API_BASE || '';
+    const res = await fetch(`${apiBase.replace(/\/$/, '')}/api/bookings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: bookingObj.name,
+        email: bookingObj.email,
+        phone: bookingObj.phone,
+        bookingText: `Course: ${bookingObj.course}\nSlot: ${bookingObj.dateText} at ${bookingObj.selectedTime}`,
+        screenshot: bookingObj.screenshot,
+      }),
     });
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`Local API error: ${res.status} ${res.statusText} - ${errBody}`);
+    }
+
+    const body = await res.json();
+    return body.booking || body;
+  } catch (err) {
+    console.error('Booking failed (local API)', err);
+    throw new Error(err.message || 'Booking failed via local API.');
+  }
+}
+
+// Fetch bookings from server (admin) when passphrase is provided
+async function fetchAdminBookings(passphrase) {
+  // If Supabase is configured, fetch from Supabase. Otherwise try the local API.
+  if (SUPABASE_CONFIGURED && supabaseClient) {
+    const { data, error } = await supabaseClient
+      .from('bookings')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (error) {
+      console.warn('Supabase admin fetch failed', error);
+      if (error.code === '42501' || (error.message && error.message.toLowerCase().includes('permission denied'))) {
+        console.warn('Admin fetch requires SELECT privileges on public.bookings for the anon role. Run: GRANT SELECT ON public.bookings TO anon;');
+      }
+      // fall through to local API attempt
+    } else {
+      return data;
+    }
+  }
+
+  // Local API fallback
+  try {
+    const apiBase = window.ZENTRIX_API_BASE || '';
+    const url = `${apiBase.replace(/\/$/, '')}/api/bookings?pass=${encodeURIComponent(passphrase)}`;
+    const res = await fetch(url, { method: 'GET' });
+    if (!res.ok) {
+      console.warn('Local API admin fetch failed', res.status, res.statusText);
+      return null;
+    }
+    const body = await res.json();
+    return Array.isArray(body.bookings) ? body.bookings : body.bookings || null;
+  } catch (err) {
+    console.warn('Local API admin fetch error', err);
+    return null;
+  }
 }
 
 

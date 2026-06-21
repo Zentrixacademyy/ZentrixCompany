@@ -146,6 +146,7 @@
             <form class="glass-panel booking-form" id="bookingForm">
               <h4>Student Registration</h4>
               <p class="selected-course-text">Selected course: <strong id="selectedCourseLabel">None</strong></p>
+              <p class="selected-slot-text">Selected slot: <strong id="selectedSlotLabel">None</strong></p>
               <label>
                 Name
                 <input type="text" id="studentName" placeholder="Alex Jordan" required />
@@ -302,6 +303,7 @@
       Your Supabase project URL and anon key are configured below.
     -->
     <script>
+      window.ZENTRIX_API_BASE = 'http://localhost:4000';
       window.ZENTRIX_SUPABASE_URL = 'https://skdqqwrzfdcfbxdufstl.supabase.co';
       window.ZENTRIX_SUPABASE_ANON_KEY = 'sb_publishable_rBYqJmhC5mN04_lbsKY3kA_r5b7R2Od';
     </script>

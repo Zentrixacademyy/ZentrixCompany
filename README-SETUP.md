@@ -19,7 +19,17 @@
 Copy this SQL and paste it into **Supabase SQL Editor**:
 
 ```sql
-CREATE TABLE bookings (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, course TEXT NOT NULL, dateText TEXT NOT NULL, selectedTime TEXT NOT NULL, phone TEXT NOT NULL, email TEXT NOT NULL, bookingText TEXT NOT NULL, screenshot TEXT NOT NULL, createdAt TIMESTAMP NOT NULL);
+-- Exact table schema expected by the frontend (column names must match)
+CREATE TABLE bookings (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  course TEXT NOT NULL,
+  dateText TEXT NOT NULL,
+  selectedTime TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT NOT NULL,
+  screenshot TEXT NOT NULL
+);
 ```
 
 **Important**: Make sure you copy the entire line including the `)` at the end and the `;` at the very end.
@@ -31,6 +41,7 @@ Paste this into the SQL Editor:
 ```sql
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
+-- Allow public inserts from the frontend (anon key). Only enable in development/test projects.
 CREATE POLICY "Allow public insert" ON bookings FOR INSERT WITH CHECK (true);
 ```
 
@@ -75,14 +86,56 @@ If it works, you'll see a confirmation modal. Your booking should appear in Supa
    - Supabase URL or key not set in `index.html`
    - Table name is not exactly `bookings`
    - RLS policy not created or wrong permissions
-   - Column names don't match (must be exact: `name`, `course`, `dateText`, `selectedTime`, `phone`, `email`, `bookingText`, `screenshot`, `createdAt`)
+   - Column names don't match (must be exact: `name`, `course`, `dateText`, `selectedTime`, `phone`, `email`, `screenshot`)
+
+### Permission denied on Supabase insert
+
+If the browser shows `permission denied for table bookings`, run this in Supabase SQL Editor:
+
+```sql
+GRANT SELECT, INSERT ON public.bookings TO anon;
+```
+
+Also ensure Row-Level Security is enabled and the insert policy exists:
+
+```sql
+ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "Allow public insert" ON bookings FOR INSERT WITH CHECK (true);
+```
+
+If the policy already exists, you can safely ignore that error and continue testing.
+
+If the browser shows `Failed to fetch` or `ERR_INTERNET_DISCONNECTED`, confirm that:
+
+- your machine has internet access,
+- the browser is online,
+- the Supabase URL configured in `index.html` is correct, and
+- the site can reach `https://YOUR_PROJECT_ID.supabase.co`.
+
+Then test again.
+
+### Missing Supabase columns
+
+If you see errors like `Could not find the 'course' column` or another missing column, run this in Supabase SQL Editor:
+
+```sql
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS course TEXT;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS dateText TEXT;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS selectedTime TEXT;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS screenshot TEXT;
+```
+
+Then verify the table schema and test again.
 
 ### "Syntax error at or near ;"
 
 Make sure you're copying the **entire** SQL statement including the closing `)` and ending `;`:
 
 ```sql
-CREATE TABLE bookings (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, course TEXT NOT NULL, dateText TEXT NOT NULL, selectedTime TEXT NOT NULL, phone TEXT NOT NULL, email TEXT NOT NULL, bookingText TEXT NOT NULL, screenshot TEXT NOT NULL, createdAt TIMESTAMP NOT NULL);
+-- Exact table schema expected by the frontend (single-line format)
+CREATE TABLE bookings (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, course TEXT NOT NULL, dateText TEXT NOT NULL, selectedTime TEXT NOT NULL, phone TEXT NOT NULL, email TEXT NOT NULL, screenshot TEXT NOT NULL, createdAt TIMESTAMP NOT NULL);
 ```
 
 ### Test with cURL
@@ -101,9 +154,7 @@ curl -X POST "https://YOUR_PROJECT_ID.supabase.co/rest/v1/bookings" \
     "selectedTime": "10:00 AM",
     "phone": "+91 12345 67890",
     "email": "test@example.com",
-    "bookingText": "Test booking",
-    "screenshot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-    "createdAt": "2026-06-21T10:00:00Z"
+    "screenshot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
   }'
 ```
 

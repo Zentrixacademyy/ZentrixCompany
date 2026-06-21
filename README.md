@@ -13,7 +13,17 @@ Backend: Supabase only.
 Copy and paste this exact SQL (including the closing parenthesis and semicolon):
 
 ```sql
-CREATE TABLE bookings (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, course TEXT NOT NULL, dateText TEXT NOT NULL, selectedTime TEXT NOT NULL, phone TEXT NOT NULL, email TEXT NOT NULL, bookingText TEXT NOT NULL, screenshot TEXT NOT NULL, createdAt TIMESTAMP NOT NULL);
+-- Exact table schema expected by the frontend (column names must match)
+CREATE TABLE bookings (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  course TEXT NOT NULL,
+  dateText TEXT NOT NULL,
+  selectedTime TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT NOT NULL,
+  screenshot TEXT NOT NULL
+);
 ```
 
 Or use the multi-line format (make sure to include the closing `)` and `;`):
@@ -27,9 +37,7 @@ CREATE TABLE bookings (
   selectedTime TEXT NOT NULL,
   phone TEXT NOT NULL,
   email TEXT NOT NULL,
-  bookingText TEXT NOT NULL,
-  screenshot TEXT NOT NULL,
-  createdAt TIMESTAMP NOT NULL
+  screenshot TEXT NOT NULL
 );
 ```
 
@@ -41,6 +49,12 @@ Go to **Authentication → Policies** for the `bookings` table and add:
 -- Allow public INSERT to bookings table
 CREATE POLICY "Enable insert for all users" ON bookings
   FOR INSERT WITH CHECK (true);
+```
+
+Also grant the anon role SELECT privileges if you want the admin booking list to work from the frontend:
+
+```sql
+GRANT SELECT, INSERT ON public.bookings TO anon;
 ```
 
 Or use the Supabase dashboard:
@@ -76,15 +90,18 @@ If you see "Booking could not be saved to Supabase":
 
 1. **Check browser console** (F12 → Console) for detailed error messages
 2. **Verify RLS policies** allow public INSERT on the `bookings` table
-3. **Check column names** match exactly: `name`, `course`, `dateText`, `selectedTime`, `phone`, `email`, `bookingText`, `screenshot`, `createdAt`
-4. **Test with Postman** or curl:
+3. **Check column names** match exactly: `name`, `course`, `dateText`, `selectedTime`, `phone`, `email`, `screenshot`
+4. **Verify SELECT and INSERT grants**: Run `GRANT SELECT, INSERT ON public.bookings TO anon;` if you see permission denied errors
+5. **Image size**: The frontend automatically compresses screenshots to ~800x600 at 60% JPEG quality before sending. If you still see `400 Bad Request`, try a smaller image file or reduce quality further.
+
+Test with Postman or curl (note: use a small base64-encoded image):
 
 ```bash
 curl -X POST "https://YOUR_PROJECT_ID.supabase.co/rest/v1/bookings" \
   -H "apikey: YOUR_ANON_KEY" \
   -H "Authorization: Bearer YOUR_ANON_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Test","course":"HTML","dateText":"Jun 21, 2026","selectedTime":"10:00 AM","phone":"1234567890","email":"test@example.com","bookingText":"test","screenshot":"data:image/png;base64,...","createdAt":"2026-06-21T10:00:00Z"}'
+  -d '{"name":"Test","course":"HTML","dateText":"Jun 21, 2026","selectedTime":"10:00 AM","phone":"1234567890","email":"test@example.com","screenshot":"data:image/jpeg;base64,/9j/4AAQSkZJRg..."}'
 ```
 
 Netlify deployment (frontend only):
