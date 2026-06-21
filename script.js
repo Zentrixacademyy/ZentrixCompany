@@ -15,6 +15,7 @@ const modalWhatsappLink = document.getElementById('modalWhatsappLink');
 const modalEmailLink = document.getElementById('modalEmailLink');
 const modalDoneBtn = document.getElementById('modalDoneBtn');
 const adminIconBtn = document.getElementById('adminIconBtn');
+const credentialPromptBtn = document.getElementById('credentialPromptBtn');
 const adminModal = document.getElementById('adminModal');
 const adminModalClose = document.getElementById('adminModalClose');
 const adminModalList = document.getElementById('adminModalList');
@@ -313,6 +314,12 @@ adminModalClose.addEventListener('click', () => closeModal(adminModal));
 modalBackdrop.addEventListener('click', () => {
   closeModal(confirmationModal);
   closeModal(adminModal);
+});
+
+credentialPromptBtn.addEventListener('click', () => {
+  promptForSupabaseCredentials();
+  alert('Supabase credentials saved to sessionStorage. Reloading page...');
+  location.reload();
 });
 
 adminIconBtn.addEventListener('click', () => {
