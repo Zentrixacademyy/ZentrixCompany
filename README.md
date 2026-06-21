@@ -10,6 +10,14 @@ Backend: Supabase only.
 
 2. **Create the bookings table** in Supabase SQL Editor:
 
+Copy and paste this exact SQL (including the closing parenthesis and semicolon):
+
+```sql
+CREATE TABLE bookings (id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, course TEXT NOT NULL, dateText TEXT NOT NULL, selectedTime TEXT NOT NULL, phone TEXT NOT NULL, email TEXT NOT NULL, bookingText TEXT NOT NULL, screenshot TEXT NOT NULL, createdAt TIMESTAMP NOT NULL);
+```
+
+Or use the multi-line format (make sure to include the closing `)` and `;`):
+
 ```sql
 CREATE TABLE bookings (
   id BIGSERIAL PRIMARY KEY,
