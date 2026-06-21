@@ -83,29 +83,17 @@ a {
   border-radius: 50%;
   background: rgba(47, 140, 255, 0.1);
   padding: 8px;
+  transition: transform 0.2s ease;
 }
 
-.admin-badge {
-  width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #2f8cff, #1b4fbd);
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 14px 30px rgba(15, 25, 60, 0.15);
-}
-
-.admin-badge-text {
+.brand-logo-link {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  font-family: 'Poppins', sans-serif;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.brand-logo-link:hover .brand-logo {
+  transform: scale(1.08);
 }
 
 .brand-mark {
@@ -537,23 +525,6 @@ a {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.admin-badge {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(47, 140, 255, 0.18);
-  overflow: hidden;
-  padding: 0;
-}
-
-.admin-badge-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -833,11 +804,6 @@ a {
     min-width: 0;
   }
 
-  .admin-badge {
-    position: absolute;
-    right: 1.25rem;
-    top: 1.25rem;
-  }
 
   .nav-links {
     display: none;

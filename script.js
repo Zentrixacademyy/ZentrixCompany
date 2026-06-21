@@ -15,7 +15,6 @@ const confirmationModalDetails = document.getElementById('confirmationModalDetai
 const modalWhatsappLink = document.getElementById('modalWhatsappLink');
 const modalEmailLink = document.getElementById('modalEmailLink');
 const modalDoneBtn = document.getElementById('modalDoneBtn');
-const adminIconBtn = document.getElementById('adminIconBtn');
 const adminModal = document.getElementById('adminModal');
 const adminModalClose = document.getElementById('adminModalClose');
 const adminModalList = document.getElementById('adminModalList');
@@ -520,28 +519,6 @@ adminModalClose.addEventListener('click', () => closeModal(adminModal));
 modalBackdrop.addEventListener('click', () => {
   closeModal(confirmationModal);
   closeModal(adminModal);
-});
-
-adminIconBtn.addEventListener('click', () => {
-  if (!adminMode) {
-    const password = prompt('Enter admin passphrase to view submitted bookings:');
-    if (password && password.toLowerCase() === 'zentrix') {
-      adminMode = true;
-      // attempt to fetch server-side bookings
-      fetchAdminBookings(password).then((serverList) => {
-        if (Array.isArray(serverList)) {
-          // replace local view with server list
-          bookings.splice(0, bookings.length, ...serverList);
-        }
-        refreshAdminList();
-        openModal(adminModal);
-      });
-    } else {
-      alert('Incorrect passphrase.');
-    }
-  } else {
-    openModal(adminModal);
-  }
 });
 
 createDateItems();
