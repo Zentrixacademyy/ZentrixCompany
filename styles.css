@@ -97,6 +97,9 @@ a {
   font-size: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 14px 30px rgba(15, 25, 60, 0.15);
+  position: absolute;
+  right: 1.25rem;
+  top: 1.25rem;
 }
 
 .admin-badge-text {
@@ -834,9 +837,12 @@ a {
   }
 
   .admin-badge {
-    position: absolute;
-    right: 1.25rem;
-    top: 1.25rem;
+    /* On mobile keep the badge inside the brand flow so it appears within the academy container */
+    position: static;
+    right: auto;
+    top: auto;
+    align-self: center;
+    margin-left: 0.5rem;
   }
 
   .nav-links {
