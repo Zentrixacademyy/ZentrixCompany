@@ -95,6 +95,9 @@ a {
   font-size: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 14px 30px rgba(15, 25, 60, 0.15);
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
 }
 
 .brand-logo-link:hover .brand-logo {
