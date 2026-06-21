@@ -16,7 +16,6 @@ const modalWhatsappLink = document.getElementById('modalWhatsappLink');
 const modalEmailLink = document.getElementById('modalEmailLink');
 const modalDoneBtn = document.getElementById('modalDoneBtn');
 const adminIconBtn = document.getElementById('adminIconBtn');
-const credentialPromptBtn = document.getElementById('credentialPromptBtn');
 const adminModal = document.getElementById('adminModal');
 const adminModalClose = document.getElementById('adminModalClose');
 const adminModalList = document.getElementById('adminModalList');
@@ -254,16 +253,18 @@ function renderTimeSlots(selectDefault = true) {
   });
 
   if (selectDefault && timeGrid.firstElementChild) {
-    selectTime(timeGrid.firstElementChild, slots[0], false);
+    selectTime(timeGrid.firstElementChild, slots[0], false, false);
   }
 }
 
-function selectTime(element, time, scroll = true) {
+function selectTime(element, time, scroll = true, focus = true) {
   selectedTime = time;
   document.querySelectorAll('.time-slot').forEach((node) => node.classList.remove('active'));
   element.classList.add('active');
   updateSelectedSlotLabel();
-  document.getElementById('studentName').focus();
+  if (focus) {
+    document.getElementById('studentName').focus();
+  }
   if (scroll) {
     bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -519,12 +520,6 @@ adminModalClose.addEventListener('click', () => closeModal(adminModal));
 modalBackdrop.addEventListener('click', () => {
   closeModal(confirmationModal);
   closeModal(adminModal);
-});
-
-credentialPromptBtn.addEventListener('click', () => {
-  promptForSupabaseCredentials();
-  alert('Supabase credentials saved to sessionStorage. Reloading page...');
-  location.reload();
 });
 
 adminIconBtn.addEventListener('click', () => {
