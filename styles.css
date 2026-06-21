@@ -89,7 +89,12 @@ a {
 .brand-logo-link {
   display: inline-flex;
   border-radius: 50%;
-  cursor: pointer;
+  background: linear-gradient(135deg, #2f8cff, #1b4fbd);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 14px 30px rgba(15, 25, 60, 0.15);
 }
 
 .brand-logo-link:hover .brand-logo {
@@ -803,7 +808,6 @@ a {
     flex: 1;
     min-width: 0;
   }
-
 
   .nav-links {
     display: none;
